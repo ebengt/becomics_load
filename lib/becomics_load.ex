@@ -30,7 +30,7 @@ defmodule Becomics_load do
 		@enforce_keys [:url, :name]
 		defstruct [:url, :name, :id, days: []]
 
-		# content is a string that is used to represent comics in a file.
+		# content is a string used to represent Comic in a file.
 		def from_content content do
 			content |> (String.split "\n") |> (Enum.filter &comic?/1) |> (List.foldl [], &from_line/2)
 		end
@@ -43,6 +43,8 @@ defmodule Becomics_load do
 			(comics |> (Enum.sort &first_precedes_second?/2) |> (Enum.map &to_line/1) |> (Enum.join "\n")) <> "\n"
 		end
 
+		# A list of Comics and one of publishes %{"day", "comic_id"}
+		# Any "day" in publish will added to "days" in Comic where Comic.id == "comic_id".
 		def zip comics, publishes do
 			map_of_comics = List.foldl comics, %{}, &comic_key_id/2
 			publishes |> (List.foldl map_of_comics, &zip_add_days/2) |> Map.values |> (Enum.map &sort_days/1)
@@ -131,7 +133,6 @@ defmodule Becomics_load do
 
 	end
 
-	def (arguments []), do: %{action: :help}
 	def (arguments ["up" | t]), do: Enum.into %{action: :upload}, (arguments_common t)
 	def (arguments ["down" | t]), do: Enum.into %{action: :download}, (arguments_common t)
 	def (arguments _), do: %{action: :help}
@@ -168,8 +169,9 @@ defmodule Becomics_load do
 	# No tests, yet! Will need a running becomics server to be useful.
 	# Working on it.
 	def download_comics arguments do
-		cs = (download_json arguments.http <> "/api/comics") |> Comic.from_jsons
+		t = Task.async fn -> (download_json arguments.http <> "/api/comics") |> Comic.from_jsons end
 		ps = download_json arguments.http <> "/api/publishes"
+		cs = Task.await t
 		{arguments, (Comic.zip cs, ps)}
 	end
 
@@ -191,23 +193,21 @@ defmodule Becomics_load do
 	# No tests, yet! Will need a running becomics server to be useful.
 	# Working on it.
 	defp upload_comics {arguments, comics} do
-		uc = fn comic ->
-			c = upload_json arguments.http <> "/api/comics", %{comic: comic} # days: will be ignored
-			%{comic | id: c["id"]}
+		uc_async = fn comic ->
+			Task.async fn ->
+				c = upload_json arguments.http <> "/api/comics", %{comic: comic} # days: will be ignored
+				comic_id = c["id"]
+				f = fn day -> upload_json arguments.http <> "/api/publishes" , %{publish: %{comic_id: comic_id, day: day}} end
+				Enum.map comic.days, f
+			end
 		end
-		ud = fn comic -> (upload_days arguments, comic) end
-		comics |> (Enum.map uc) |> (Enum.map ud) 
-	end
-
-	defp upload_days arguments, comic do
-		f = fn day -> (upload_json arguments.http <> "/api/publishes" , %{publish: %{comic_id: comic.id, day: day}}) end
-		Enum.map comic.days, f
+		comics |> (Enum.map uc_async) |> (Enum.map (&Task.await &1))
 	end
 
 	defp upload_json url, body do
 		{:ok, j} = Poison.encode body
 		{:ok, r} = HTTPoison.post url, j, [{"Content-Type", "application/json"}]
-		201 = r.status_code
+		{201, ^body} = {r.status_code, body} # see what any crash is about
 		{:ok, data} = Poison.decode r.body
 		data["data"]
 	end

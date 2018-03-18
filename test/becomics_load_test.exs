@@ -53,7 +53,7 @@ defmodule Becomics_loadTest do
 		cs = [%Becomics_load.Comic{name: "Megatokyo", url: "http://megatokyo.com", id: "m_id"},
 			%Becomics_load.Comic{name: "weekly", url: "http://weekly.com", id: "w_id"},
 			%Becomics_load.Comic{name: "Sun", url: "http://www.sun.com", id: "s_id"}]
-		# id is not used.
+		# id is not used so I do not give it a value.
 		ps = [%{"day" => "Mon", "comic_id" => "m_id"},
 			%{"day" => "Tue", "comic_id" => "m_id"},
 			%{"day" => "Fri", "comic_id" => "m_id"},
