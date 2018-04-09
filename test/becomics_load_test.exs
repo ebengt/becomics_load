@@ -57,8 +57,8 @@ defmodule Becomics_loadTest do
 		ps = [%{"day" => "Mon", "comic_id" => "m_id"},
 			%{"day" => "Tue", "comic_id" => "m_id"},
 			%{"day" => "Fri", "comic_id" => "m_id"},
-			%{"day" => "weekly", "comic_id" => "w_id"},
 			%{"day" => "Sun", "comic_id" => "s_id"},
+			%{"day" => "weekly", "comic_id" => "w_id"},
 			%{"day" => "Sat", "comic_id" => "s_id"},
 			%{"day" => "Thu", "comic_id" => "s_id"},
 			%{"day" => "Wed", "comic_id" => "s_id"}]
@@ -72,11 +72,11 @@ defmodule Becomics_loadTest do
 
 
 	defp content, do: """
-	http://megatokyo.com\t#\tcomic_update_day\tMon,Tue
-	http://www.sun.com\t#\tcomic_update_day\tWed,Thu
-	https://www.gocomics.com/acomic\t#\tcomic_update_day\tx
-	https://tumangaonline.com/lector/Manga-Name\t#\tcomic_update_day\tx
-	https://www.tumangaonline.com/biblioteca/mangas/123/Biblioteca-Name\t#\tcomic_update_day\tx
-	http://kalle.com\t# gustav\tcomic_update_day\tx
-	"""
+http://megatokyo.com\t#\tcomic_update_day\tMon,Tue
+http://www.sun.com\t#\tcomic_update_day\tWed,Thu
+https://www.gocomics.com/acomic\t#\tcomic_update_day\tx
+https://tumangaonline.com/lector/Manga-Name\t#\tcomic_update_day\tx
+https://www.tumangaonline.com/biblioteca/mangas/123/Biblioteca-Name\t#\tcomic_update_day\tx
+http://kalle.com\t# gustav\tcomic_update_day\tx
+"""
 end

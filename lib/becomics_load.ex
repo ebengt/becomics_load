@@ -62,13 +62,8 @@ defmodule Becomics_load do
 
 
 		defp first_precedes_second? first, second do
-			first_uri = URI.parse first.url
-			second_uri = URI.parse second.url
-			(first_precedes_second_join first_uri.host, first_uri.path) <= (first_precedes_second_join second_uri.host, second_uri.path)
+			first.name <= second.name
 		end
-
-		defp (first_precedes_second_join host, nil), do: host
-		defp (first_precedes_second_join host, path), do: host <> path
 
 
 		def from_one_json json do
