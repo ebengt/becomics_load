@@ -107,6 +107,9 @@ defmodule Becomics_load do
     defp name_from_tumanga(["/", "biblioteca", "mangas", _id, manga | _t]),
       do: manga |> String.split("-") |> Enum.join(" ")
 
+    defp name_from_tumanga(["/", "library", "manhwa", _id, manga | _t]),
+      do: manga |> String.split("-") |> Enum.join(" ")
+
     defp sort_days(comic), do: %{comic | days: Enum.sort(comic.days, &sort_days?/2)}
 
     defp sort_days?(day1, day2), do: sort_days_n(day1) <= sort_days_n(day2)
@@ -133,6 +136,13 @@ defmodule Becomics_load do
 
   def arguments(["up" | t]), do: Enum.into(%{action: :upload}, arguments_common(t))
   def arguments(["down" | t]), do: Enum.into(%{action: :download}, arguments_common(t))
+
+  def arguments(["lost" | t]) do
+    ac = arguments_common(t)
+    action = arguments_lost_file(File.exists?(ac.file))
+    Enum.into(%{action: action}, ac)
+  end
+
   def arguments(_), do: %{action: :help}
 
   def comics_from_content({arguments, content}) do
@@ -151,6 +161,7 @@ defmodule Becomics_load do
 
   defp action(%{action: :upload} = arguments), do: action_upload(arguments)
   defp action(%{action: :download} = arguments), do: action_download(arguments)
+  defp action(%{action: :lostfile} = arguments), do: action_lostfile(arguments)
   defp action(%{action: :help}), do: IO.puts("#{:escript.script_name()}" <> " " <> @moduledoc)
 
   # arguments will be going all they way in the pipe, together with any added items.
@@ -159,6 +170,12 @@ defmodule Becomics_load do
 
   defp action_upload(arguments),
     do: arguments |> upload_read! |> comics_from_content |> upload_comics
+
+  defp action_lostfile(arguments),
+    do: arguments |> upload_read! |> comics_from_content |> lost_comics |> lost_write!
+
+  defp arguments_lost_file(true), do: :lostfile
+  defp arguments_lost_file(false), do: :losthttp
 
   # Crash if too may arguments. The user probably is confused and need to think about things.
   defp arguments_common([]), do: %{file: "http.comics", http: "http://localhost:4000"}
@@ -184,6 +201,38 @@ defmodule Becomics_load do
   defp download_write!({arguments, content}) do
     File.write!(arguments.file, content, [:exclusive, :raw])
   end
+
+  defp lost_comics({arguments, comics}) do
+    f = fn comic ->
+      lost_comics(HTTPoison.get(comic.url), comic)
+    end
+
+    {arguments, Enum.map(comics, f)}
+  end
+
+  defp lost_comics({:ok, result}, comic), do: lost_comics(result.status_code, result, comic)
+  defp lost_comics({:error, _}, comic), do: {:lost, comic}
+
+  defp lost_comics(200, _result, comic), do: {:found, comic}
+  defp lost_comics(302, _result, comic), do: {:found, comic}
+
+  defp lost_comics(301, result, comic),
+    do: lost_comics_301(:proplists.get_value("Location", result.headers), comic)
+
+  defp lost_comics(status, _result, comic),
+    do: {:lost, %{comic | name: Integer.to_string(status)}}
+
+  defp lost_comics_301(:undefined, comic), do: {:lost, %{comic | name: "301"}}
+  defp lost_comics_301(url, comic), do: {:found, %{comic | url: url}}
+
+  defp lost_write!({arguments, lost_and_found}) do
+    {lost, found} = Enum.reduce(lost_and_found, {[], []}, &lost_and_found/2)
+    File.write!(arguments.file <> ".lost", Comic.to_content(lost), [:exclusive, :raw])
+    File.write!(arguments.file <> ".found", Comic.to_content(found), [:exclusive, :raw])
+  end
+
+  defp lost_and_found({:lost, lost}, {lost_acc, found_acc}), do: {[lost | lost_acc], found_acc}
+  defp lost_and_found({:found, found}, {lost_acc, found_acc}), do: {lost_acc, [found | found_acc]}
 
   # Upload each comic to two JSON interfaces. One for URL and Name, the other for Days.
   # Days need the result (id) of the first, and has to be called once per day in Days.

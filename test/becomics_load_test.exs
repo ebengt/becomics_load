@@ -25,6 +25,23 @@ defmodule Becomics_loadTest do
       assert a.file === "bfile"
       assert a.http === "http://something.com:8080"
     end
+
+    test "lost in file" do
+      afile = "cfile"
+      File.write!(afile, "content")
+      a = Becomics_load.arguments(["lost", afile])
+      assert a.action === :lostfile
+      assert a.file === afile
+      File.rm!(afile)
+    end
+
+    test "lost in http" do
+      afile = "dfile"
+      File.rm(afile)
+      a = Becomics_load.arguments(["lost", afile])
+      assert a.action === :losthttp
+      assert a.file === afile
+    end
   end
 
   test "content from comics" do
