@@ -162,6 +162,7 @@ defmodule Becomics_load do
   defp action(%{action: :upload} = arguments), do: action_upload(arguments)
   defp action(%{action: :download} = arguments), do: action_download(arguments)
   defp action(%{action: :lostfile} = arguments), do: action_lostfile(arguments)
+  defp action(%{action: :losthttp} = arguments), do: action_losthttp(arguments)
   defp action(%{action: :help}), do: IO.puts("#{:escript.script_name()}" <> " " <> @moduledoc)
 
   # arguments will be going all they way in the pipe, together with any added items.
@@ -173,6 +174,9 @@ defmodule Becomics_load do
 
   defp action_lostfile(arguments),
     do: arguments |> upload_read! |> comics_from_content |> lost_comics |> lost_write!
+
+  defp action_losthttp(arguments),
+    do: arguments |> download_comics |> lost_comics |> lost_write!
 
   defp arguments_lost_file(true), do: :lostfile
   defp arguments_lost_file(false), do: :losthttp
