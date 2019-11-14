@@ -1,11 +1,15 @@
 defmodule Becomics_load do
   @moduledoc """
-  up | down [file [url]]
+  up | down | lost [file [url]]
 
   Load (up or down) becomics from/to a file.
+  Or find which comics that have become lost. If file exists the comics are read from it.
+  The lost comcis are written to file".lost" and the found ones to file".found". In case of
+  a redirect (301) the found file contains the target of the redirect. If file does not exist
+  comics are read from url.
 
   Positional arguments.
-  First "up" or "down".
+  First "up", "down" or "lost".
   Second the file name. Default: http.comics
   Third is becomics URL. Default: http://localhost:4000
   If you want to change the URL you must give a file name.
@@ -221,13 +225,13 @@ defmodule Becomics_load do
   defp lost_comics(302, _result, comic), do: {:found, comic}
 
   defp lost_comics(301, result, comic),
-    do: lost_comics_301(:proplists.get_value("Location", result.headers), comic)
+    do: lost_comics_301(List.keyfind(result.headers, "Location", 1), comic)
 
   defp lost_comics(status, _result, comic),
     do: {:lost, %{comic | name: Integer.to_string(status)}}
 
-  defp lost_comics_301(:undefined, comic), do: {:lost, %{comic | name: "301"}}
-  defp lost_comics_301(url, comic), do: {:found, %{comic | url: url}}
+  defp lost_comics_301(nil, comic), do: {:lost, %{comic | name: "301"}}
+  defp lost_comics_301({_location, url}, comic), do: {:found, %{comic | url: url}}
 
   defp lost_write!({arguments, lost_and_found}) do
     {lost, found} = Enum.reduce(lost_and_found, {[], []}, &lost_and_found/2)
