@@ -1,4 +1,5 @@
-becomics_load
+/becomics_load
+
 # The directory Mix will write compiled artifacts to.
 /_build/
 
