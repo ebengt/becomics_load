@@ -13,6 +13,10 @@ defmodule Becomics_load do
   Second the file name. Default: http.comics
   Third is becomics URL. Default: http://localhost:4000
   If you want to change the URL you must give a file name.
+  When first argument is "dates":
+  Second is start date.
+  Third is stop date.
+  Fourth is becomics URL. Default: http://localhost:4000
   """
 
   @doc """
@@ -28,10 +32,20 @@ defmodule Becomics_load do
     :world
   end
 
-  # Documentation mentions that the module can be defined after use, but I got an error.
-
   def arguments(["up" | t]), do: Enum.into(%{action: :upload}, arguments_common(t))
   def arguments(["down" | t]), do: Enum.into(%{action: :download}, arguments_common(t))
+
+  # Override default file name
+  def arguments(["dates", start, stop]), do: arguments(["dates", start, stop, "dates_"])
+
+  def arguments(["dates", start, stop | t]) do
+    ac = arguments_common(t)
+
+    Enum.into(
+      %{action: :dates, start: String.to_integer(start), stop: String.to_integer(stop)},
+      ac
+    )
+  end
 
   def arguments(["lost" | t]) do
     ac = arguments_common(t)
@@ -50,13 +64,14 @@ defmodule Becomics_load do
   end
 
   def main(argv) do
-    arguments(argv) |> action
+    argv |> arguments() |> action()
   end
 
   # Private functions
 
   defp action(%{action: :upload} = arguments), do: action_upload(arguments)
   defp action(%{action: :download} = arguments), do: action_download(arguments)
+  defp action(%{action: :dates} = arguments), do: action_dates(arguments)
   defp action(%{action: :lostfile} = arguments), do: action_lostfile(arguments)
   defp action(%{action: :losthttp} = arguments), do: action_losthttp(arguments)
   defp action(%{action: :help}), do: IO.puts("#{:escript.script_name()}" <> " " <> @moduledoc)
@@ -67,6 +82,9 @@ defmodule Becomics_load do
 
   defp action_upload(arguments),
     do: arguments |> upload_read! |> comics_from_content |> upload_comics
+
+  defp action_dates(%{start: start, stop: stop} = arguments) when start < stop,
+    do: for(x <- start..stop, do: date_comics(x, arguments))
 
   defp action_lostfile(arguments),
     do: arguments |> upload_read! |> comics_from_content |> lost_comics |> lost_write!
@@ -100,6 +118,30 @@ defmodule Becomics_load do
     200 = r.status_code
     {:ok, data} = Poison.decode(r.body)
     data["data"]
+  end
+
+  # Internal functions
+
+  defp date_comics(date, arguments) do
+    date |> download_webpages(arguments) |> download_webpages_write!(arguments)
+  end
+
+  defp download_webpages(date, arguments) do
+    day = download_webpages_day(date)
+    {:ok, comics} = HTTPoison.get(arguments.http <> "/comics/" <> day)
+    {:ok, sample} = HTTPoison.get(arguments.http <> "/sample/" <> Integer.to_string(date))
+    {date, comics.body, sample.body}
+  end
+
+  defp download_webpages_day(date) do
+    now = DateTime.utc_now()
+    day_number = Calendar.ISO.day_of_week(now.year, now.month, date)
+    Enum.at(["ignore", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], day_number)
+  end
+
+  defp download_webpages_write!({date, comics, sample}, arguments) do
+    file = arguments.file <> Integer.to_string(date) <> ".html"
+    File.write!(file, comics <> sample)
   end
 
   defp download_write!({arguments, content}) do
