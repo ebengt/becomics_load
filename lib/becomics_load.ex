@@ -1,6 +1,7 @@
 defmodule Becomics_load do
   @moduledoc """
   up | down | lost [file [url]]
+  dates start stop [url]
 
   Load (up or down) becomics from/to a file.
   Or find which comics that have become lost. If file exists the comics are read from it.
