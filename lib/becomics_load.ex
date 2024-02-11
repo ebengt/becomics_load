@@ -106,10 +106,10 @@ defmodule Becomics_load do
   def download_comics(arguments) do
     t =
       Task.async(fn ->
-        download_json(arguments.http <> "/api/comics") |> Becomics_load.Comic.from_jsons()
+        download_json(arguments.http <> "/api/comic") |> Becomics_load.Comic.from_jsons()
       end)
 
-    ps = download_json(arguments.http <> "/api/publishes")
+    ps = download_json(arguments.http <> "/api/publish")
     cs = Task.await(t)
     {arguments, Becomics_load.Comic.zip(cs, ps)}
   end
@@ -129,15 +129,15 @@ defmodule Becomics_load do
 
   defp download_webpages(date, arguments) do
     day = download_webpages_day(date)
-    {:ok, comics} = HTTPoison.get(arguments.http <> "/comics/" <> day)
+    {:ok, comics} = HTTPoison.get(arguments.http <> "/comic/" <> day)
     {:ok, sample} = HTTPoison.get(arguments.http <> "/sample/" <> Integer.to_string(date))
     {date, comics.body, sample.body}
   end
 
   defp download_webpages_day(date) do
     now = DateTime.utc_now()
-    day_number = Calendar.ISO.day_of_week(now.year, now.month, date)
-    Enum.at(["ignore", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], day_number)
+    day_number = Calendar.ISO.day_of_week(now.year, now.month, date, :monday)
+    Enum.at(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], day_number)
   end
 
   defp download_webpages_write!({date, comics, sample}, arguments) do
@@ -197,11 +197,11 @@ defmodule Becomics_load do
     uc_async = fn comic ->
       Task.async(fn ->
         # days: will be ignored
-        c = upload_json(arguments.http <> "/api/comics", %{comic: comic})
+        c = upload_json(arguments.http <> "/api/comic", %{comic: comic})
         comic_id = c["id"]
 
         f = fn day ->
-          upload_json(arguments.http <> "/api/publishes", %{
+          upload_json(arguments.http <> "/api/publish", %{
             publish: %{comic_id: comic_id, day: day}
           })
         end
