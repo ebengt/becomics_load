@@ -128,21 +128,13 @@ defmodule Becomics_load do
   end
 
   defp download_webpages(date, arguments) do
-    day = download_webpages_day(date)
-    {:ok, comics} = HTTPoison.get(arguments.http <> "/comic/" <> day)
-    {:ok, sample} = HTTPoison.get(arguments.http <> "/sample/" <> Integer.to_string(date))
-    {date, comics.body, sample.body}
+    {:ok, daily} = HTTPoison.get(arguments.http <> "/daily/" <> Integer.to_string(date))
+    {date, daily.body}
   end
 
-  defp download_webpages_day(date) do
-    now = DateTime.utc_now()
-    day_number = Calendar.ISO.day_of_week(now.year, now.month, date, :monday)
-    Enum.at(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], day_number)
-  end
-
-  defp download_webpages_write!({date, comics, sample}, arguments) do
+  defp download_webpages_write!({date, comics}, arguments) do
     file = arguments.file <> Integer.to_string(date) <> ".html"
-    File.write!(file, comics <> sample)
+    File.write!(file, comics)
   end
 
   defp download_write!({arguments, content}) do
