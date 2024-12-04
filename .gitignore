@@ -1,4 +1,10 @@
 /becomics_load
+/comics.http
+/comics.http.found
+/comics.http.lost
+/down
+/t.exs
+/up
 
 # The directory Mix will write compiled artifacts to.
 /_build/
