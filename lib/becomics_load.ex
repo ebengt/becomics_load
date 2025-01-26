@@ -44,9 +44,14 @@ defmodule Becomics_load do
     Enum.into(%{action: action}, ac)
   end
 
-  def arguments(["urlhostchange", from, to | t]) do
+  def arguments(["urlchange", from, to | t]) do
     ac = arguments_common(t)
-    Enum.into(%{action: :urlhostchange, from: from, to: to}, ac)
+    Enum.into(%{action: :urlchange, from: from, to: to}, ac)
+  end
+
+  def arguments(["daychange", from, to | t]) do
+    ac = arguments_common(t)
+    Enum.into(%{action: :daychange, from: from, to: to}, ac)
   end
 
   def arguments(_), do: %{action: :help}
@@ -62,7 +67,8 @@ defmodule Becomics_load do
   defp action({:dates, arguments}), do: Becomics_load.Dates.comics(arguments)
   defp action({:lostfile, arguments}), do: Becomics_load.Lost.file(arguments)
   defp action({:losthttp, arguments}), do: Becomics_load.Lost.http(arguments)
-  defp action({:urlhostchange, arguments}), do: Becomics_load.URL.change(arguments)
+  defp action({:urlchange, arguments}), do: Becomics_load.URL.change(arguments)
+  defp action({:daychange, arguments}), do: Becomics_load.Day.change(arguments)
   defp action({:help, _}), do: IO.puts("#{:escript.script_name()}" <> " " <> @moduledoc)
 
   defp arguments_lost_file(true), do: :lostfile

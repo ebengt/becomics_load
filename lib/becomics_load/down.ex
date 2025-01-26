@@ -12,6 +12,9 @@ defmodule Becomics_load.Down do
   def only_comics(arguments),
     do: download_json(arguments.http <> "/api/comic") |> Becomics_load.Comic.from_jsons()
 
+  def only_publishes(arguments),
+    do: download_json(arguments.http <> "/api/publish") |> Becomics_load.Publish.from_jsons()
+
   # Private functions
 
   defp down(arguments) do

@@ -40,10 +40,6 @@ defmodule Becomics_load.Comic do
     first.name <= second.name
   end
 
-  def from_one_json(json) do
-    %__MODULE__{id: json["id"], url: json["url"], name: json["name"]}
-  end
-
   defp from_line(line, acc) do
     parts = String.split(line, "\t")
     [url | _] = parts
@@ -61,6 +57,10 @@ defmodule Becomics_load.Comic do
 
   defp from_line_name_present("", uri), do: name_from_uri(uri)
   defp from_line_name_present(name, _uri), do: name
+
+  defp from_one_json(json) do
+    %__MODULE__{id: json["id"], url: json["url"], name: json["name"]}
+  end
 
   # Historical function from when # Name did not have Name.
   defp name_from_uri(uri), do: uri.host |> String.split(".") |> name_from_host(uri)
