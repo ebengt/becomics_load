@@ -93,6 +93,7 @@ defmodule Becomics_load.Comic do
   defp sort_days_n("Fri"), do: 4
   defp sort_days_n("Sat"), do: 5
   defp sort_days_n("Sun"), do: 6
+  defp sort_days_n(_), do: 9
 
   defp to_line(comic) do
     comic.url <> "\t# " <> comic.name <> "\tcomic_update_day\t" <> Enum.join(comic.days, ",")
