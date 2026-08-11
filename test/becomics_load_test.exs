@@ -50,11 +50,11 @@ defmodule Becomics_loadTest do
       assert a.http === "http://localhost:4000"
     end
 
-    test "urlhostchange" do
+    test "urlchange" do
       start = "10"
       stop = "20"
-      a = Becomics_load.arguments(["urlhostchange", start, stop])
-      assert a.action === :urlhostchange
+      a = Becomics_load.arguments(["urlchange", start, stop])
+      assert a.action === :urlchange
       assert a.from === start
       assert a.to === stop
       assert a.http === "http://localhost:4000"
